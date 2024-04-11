@@ -4,9 +4,9 @@
 
 # REPSOL LUZ Y GAS API for Home Assistant
 
-Custom Integration for Home Assistant to connect and disply data for Electricity Contracts with Repsol Luz y Gas
+Custom Integration for Home Assistant to connect and display data for Electricity Contracts with Repsol Luz y Gas.
 
-This integration has based on the initial integration done by [bbzoiro](https://github.com/bzzoiro/repsolluzygas)
+This integration is based on the initial integration done by [bbzoiro](https://github.com/bzzoiro/repsolluzygas)
 
 ## Description
 
@@ -50,8 +50,37 @@ The current version supports the following sensors:
 
 - Enjoy!
 
+## Version History
+
+```
+0.1.1
+- Initial Release
+- Add Next Invoice Amount Sensor (includes Amount, Variable Amount and Fixed Amount)
+- Add ConfigFlow configuration
+- Add HACS Custom Repository Configuration
+- Revised Average Amount to be pulled from API, instead of calculation
+```
+
 
 ## TO-DO
 
 - Implement Gas Sensors (if you have this type of contract, please contact me)
-- Check multicontract capabilities, although it should work fine.
+- Check multicontract capabilities, although it should work fine
+- Address unique-ids for multicontracts, multihouses
+- Official HACS Release to use without Custom Repositories
+- Units from Home Assistant instead of fixed ones
+- Figure out the SVAs information from API (Virtual Battery for PV Contracts and Additional Services)
+- Add Device and append Contract Information (CUPS. House_id, Contract_id, etc..) as additional information
+
+
+## Credits
+- [bbzoiro](https://github.com/bzzoiro/repsolluzygas) - The developer of the base integration
+
+## License
+
+This project is licensed under MIT License.
+
+## Disclaimer
+
+THIS PROJECT IS NOT IN ANY WAY ASSOCIATED WITH OR RELATED TO THE REPSOL GROUP OF COMPANIES OR ANY OTHER. The information here and online is for educational and resource purposes only and therefore the developers do not endorse or condone any inappropriate use of it, and take no legal responsibility for the functionality or security of your devices.
+
