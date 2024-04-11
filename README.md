@@ -27,7 +27,8 @@ This also supports Multi-house and Multi-Contracts.
 - Copy this repo URL
 - In the HACS section, add this repo as a custom one:
 
-  ![Custom repository](static/images/add_hacs_custom_repo.png)
+  ![image](https://github.com/ad-ha/repsolluzygas-async/assets/59612788/6bd01379-d132-4193-989a-ba0985a25987)
+
   
   - On the "Repository" field put the URL copied before
   - On the "Category" select "Integration"
@@ -35,7 +36,7 @@ This also supports Multi-house and Multi-Contracts.
 - Restart HA
 
 ## How to configure
-![image](https://github.com/ad-ha/repsolluzygas-async/assets/59612788/e9d46e15-eee7-41e4-ba1b-bb09e9bbbcfd)(https://my.home-assistant.io/redirect/config_flow_start?domain=repsolluzygas)
+[<img src="https://github.com/ad-ha/repsolluzygas-async/assets/59612788/e9d46e15-eee7-41e4-ba1b-bb09e9bbbcfd"](https://my.home-assistant.io/redirect/config_flow_start?domain=repsolluzygas)
 
 - Go to Settings > Devices & Services > Add Integration > Repsol Luz y Gas
   ![image](https://github.com/ad-ha/repsolluzygas-async/assets/59612788/91309474-fdf5-4b7b-a73b-1d5d116fd0ab)
