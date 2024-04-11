@@ -1,0 +1,23 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Device is already configured"
+    },
+    "error": {
+      "cannot_connect": "Failed to Connect",
+      "invalid_auth": "Invalid Authentication",
+      "unknown": "Unexpected error",
+      "fetch_contracts_failed": "Failed to Fetch Contracts",
+      "no_contracts": "No Contracts Found"
+    },
+    "step": {
+      "user": {
+        "data": {
+          "name": "Name",
+          "password": "Password",
+          "username": "Username"
+        }
+      }
+    }
+  }
+}
