@@ -1,0 +1,11 @@
+{
+    "domain": "repsolluzygas",
+    "name": "Repsol Luz y Gas",
+    "documentation": "https://github.com/ad-ha/repsolluzygas",
+    "version": "0.0.1",
+    "dependencies": [],
+    "codeowners": ["@ad-ha"],
+    "issue_tracker": "https://github.com/ad-ad/repsolluzygas/issues",
+    "iot_class": "cloud_polling",
+    "config_flow": true
+  }
