@@ -62,6 +62,7 @@ The current version supports the following sensors:
 - Add ConfigFlow configuration
 - Add HACS Custom Repository Configuration
 - Revised Average Amount to be pulled from API, instead of calculation
+- Implement Unique_Id for each sensor. The sensors are now configurable from UI.
 ```
 
 
