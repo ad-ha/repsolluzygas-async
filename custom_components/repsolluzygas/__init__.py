@@ -7,6 +7,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers import config_validation as cv
 from aiohttp.client_exceptions import ClientError
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -21,6 +22,8 @@ from .const import (
     NEXT_INVOICE_URL,
     UPDATE_INTERVAL,
 )
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema()
 
 PLATFORMS: list[str] = ["sensor"]
 

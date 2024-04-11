@@ -4,9 +4,9 @@
       "already_configured": "Device is already configured"
     },
     "error": {
-      "cannot_connect": "Failed to Connect",
-      "invalid_auth": "Invalid Authentication",
-      "unknown": "Unexpected error",
+      "login_failed": "Login Failed",
+      "invalid_contracts_data": "Invalid Contracts Data",
+      "invalid_contract_selection": "Invalid Contract Selection",
       "fetch_contracts_failed": "Failed to Fetch Contracts",
       "no_contracts": "No Contracts Found"
     },

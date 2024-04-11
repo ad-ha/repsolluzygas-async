@@ -1,11 +1,9 @@
 """Platform for Repsol Luz y Gas sensor integration."""
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.components.sensor import SensorEntity
-from . import DOMAIN, RepsolLuzYGasAPI
+from . import DOMAIN, LOGGER, RepsolLuzYGasAPI
 
 import logging
-
-_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass, entry, async_add_entities):
