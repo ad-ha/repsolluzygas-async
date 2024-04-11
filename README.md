@@ -1,6 +1,8 @@
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/custom-components/hacs)
 ![GitHub Release (latest SemVer including pre-releases)](https://img.shields.io/github/v/release/ad-ha/repsolluzygas-async?include_prereleases)
 ![GitHub Downloads (all assets, latest release)](https://img.shields.io/github/downloads/ad-ha/repsolluzygas-async/latest/total)
+
+[![HACS Action](https://github.com/ad-ha/repsolluzygas-async/actions/workflows/hacs.yml/badge.svg)](https://github.com/ad-ha/repsolluzygas-async/actions/workflows/hacs.yml)
 [![Validate with hassfest](https://github.com/ad-ha/repsolluzygas-async/actions/workflows/hassfest.yml/badge.svg)](https://github.com/ad-ha/repsolluzygas-async/actions/workflows/hassfest.yml)
 
 # REPSOL LUZ Y GAS API for Home Assistant
