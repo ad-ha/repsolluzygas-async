@@ -3,6 +3,5 @@
   "homeassistant": "2024.01",
   "hacs": "1.33.0",
   "render_readme": true,
-  "iot_class": "Cloud Push",
   "country": "ES"
 }
