@@ -14,6 +14,11 @@ This integration has been redesigned to implement async methods and to allow the
 
 This also supports Multi-house and Multi-Contracts.
 
+The current version supports the following sensors:
+
+![image](https://github.com/ad-ha/repsolluzygas-async/assets/59612788/44be4adc-d46e-4ef3-acd9-9977b3dd2900)
+
+
 ### Installation
 
 #### - Manual method
