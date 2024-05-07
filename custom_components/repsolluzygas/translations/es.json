@@ -1,0 +1,35 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Iniciar sesión",
+                "data": {
+                    "username": "Usuario",
+                    "password": "Contraseña"
+                }
+            },
+            "contract": {
+                "title": "Seleccionar Contrato",
+                "data": {
+                    "contract_index": "Seleccione el contrato basado en el CUPS"
+                }
+            }
+        },
+        "error": {
+            "already_configured": "Este contrato ya está configurado. Por favor, seleccione otro contrato.",
+            "login_failed": "Error al iniciar sesión con las credenciales proporcionadas. Verifique su nombre de usuario y contraseña y vuelva a intentarlo.",
+            "invalid_contracts_data": "Error al recuperar los datos del contrato. Verifique su conexión o la configuración de la API.",
+            "invalid_contract_selection": "Selección de contrato inválida. Intente de nuevo."
+        },
+        "abort": {
+            "already_configured": "Este contrato ya ha sido configurado y no puede configurarse nuevamente."
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Integración Repsol Luz y Gas"
+            }
+        }
+    }
+}
