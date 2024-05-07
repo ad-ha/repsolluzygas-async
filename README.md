@@ -65,17 +65,29 @@ The current version supports the following sensors:
 - Implement Unique_Id for each sensor. The sensors are now configurable from UI.
 ```
 
+```
+0.1.3
+- Revise logics to enable CUPS data and Contract Type
+- Revise the sensor details to include:
+ - Add Device info for each contract, including details on Contract Type and CUPS, plus House ID
+ - Use Home Assistant core units (EUR and kWh)
+ - Rename sensor to include CUPS
+ - Update Unique ID coding
+- Revise Config Flow to include CUPS on contract selection.
+- Add logic to prevent adding the same contract multiple times.
+- Add Spanish translations to Config Flow
+- Update English labeling on Config Flow
+```
 
 ## TO-DO
 
 - Implement Gas Sensors (if you have this type of contract, please contact me)
 - Check multicontract capabilities, although it should work fine
-- Address unique-ids for multicontracts, multihouses
-- Official HACS Release to use without Custom Repositories
-- Units from Home Assistant instead of fixed ones
+- Official HACS Release to use without Custom Repositories (currently pending approvals)
 - Figure out the SVAs information from API (Virtual Battery for PV Contracts and Additional Services)
-- Add Device and append Contract Information (CUPS. House_id, Contract_id, etc..) as additional information
-
+- ~~Add Device and append Contract Information (CUPS. House_id, Contract_id, etc..) as additional information~~
+- ~~Units from Home Assistant instead of fixed ones~~
+- ~~Address unique-ids for multicontracts, multihouses~~
 
 ## Credits
 - [bbzoiro](https://github.com/bzzoiro/repsolluzygas) - The developer of the base integration
