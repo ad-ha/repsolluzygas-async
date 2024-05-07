@@ -208,9 +208,6 @@ class RepsolLuzYGasAPI:
                                 0
                             ]  # Assuming we're interested in the first house
                             contracts["house_id"] = data["code"]
-                            contracts["numberOfContracts"] = len(
-                                data.get("contracts", [])
-                            )
                             contracts["information"] = []
 
                             for contract in data.get("contracts", []):
@@ -450,7 +447,6 @@ class RepsolLuzYGasAPI:
                 if invoices:
                     data["lastInvoiceAmount"] = invoices[0]["amount"]
                     data["lastInvoicePaid"] = invoices[0]["status"] == "PAID"
-                    data["numberOfContracts"] = len(contracts["information"])
 
         self.data = data
         LOGGER.debug("Sensor Data %s", self.data)
@@ -464,26 +460,25 @@ class RepsolLuzYGasAPI:
             if not contracts_data:
                 raise Exception("Failed to fetch contracts.")
 
-            # Example for fetching invoices and costs for the first contract
-            # You might need to adjust this logic based on your data structure
-            first_contract = contracts_data["information"][0]
-            house_id = contracts_data["house_id"]
-            contract_id = first_contract["contract_id"]
+            all_data = {}
+            for contract in contracts_data.get("information", []):
+                house_id = contracts_data["house_id"]
+                contract_id = contract["contract_id"]
+                invoices_data = await self.async_get_invoices(house_id, contract_id)
+                costs_data = await self.async_get_costs(house_id, contract_id)
+                next_invoice_data = await self.async_get_next_invoice(
+                    house_id, contract_id
+                )
 
-            invoices_data = await self.async_get_invoices(house_id, contract_id)
-            costs_data = await self.async_get_costs(house_id, contract_id)
-            next_invoice_data = await self.async_get_next_invoice(house_id, contract_id)
+                all_data[contract_id] = {
+                    "contracts": contract,
+                    "invoices": invoices_data,
+                    "costs": costs_data,
+                    "nextInvoice": next_invoice_data,
+                }
+            LOGGER.debug("Sensor Data %s", all_data)
 
-            # Combine all fetched data into a single structure
-            combined_data = {
-                "contracts": contracts_data,
-                "invoices": invoices_data,
-                "costs": costs_data,
-                "nextInvoice": next_invoice_data,
-            }
-            LOGGER.debug("Sensor Data %s", combined_data)
-
-            return combined_data
+            return all_data
 
         except Exception as e:
             LOGGER.error(f"Error fetching all data: {e}")
