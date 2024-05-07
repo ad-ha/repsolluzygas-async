@@ -216,7 +216,8 @@ class RepsolLuzYGasAPI:
                             for contract in data.get("contracts", []):
                                 info = {}
                                 info["contract_id"] = contract["code"]
-                                info["type"] = contract["contractType"]
+                                info["contractType"] = contract["contractType"]
+                                info["cups"] = contract["cups"]
                                 info["active"] = contract["status"] == "ACTIVE"
                                 contracts["information"].append(info)
 
