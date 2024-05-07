@@ -64,12 +64,6 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 "is_master": False,
             },
             {
-                "name": "Number of Contracts",
-                "variable": "numberOfContracts",
-                "device_class": None,
-                "is_master": False,
-            },
-            {
                 "name": "Last Invoice",
                 "variable": "lastInvoiceAmount",
                 "device_class": SensorDeviceClass.MONETARY,
@@ -101,20 +95,21 @@ async def async_setup_entry(hass, entry, async_add_entities):
             },
         ]
 
-        for sensor_def in sensor_definitions:
-            sensors.append(
-                RepsolLuzYGasSensor(
-                    coordinator=coordinator,
-                    name=sensor_def["name"],
-                    variable=sensor_def["variable"],
-                    device_class=sensor_def["device_class"],
-                    is_master=sensor_def["is_master"],
-                    house_id=contract_data["house_id"],
-                    contractType=contract["contractType"],
-                    contract_id=contract["contract_id"],
-                    cups=contract["cups"],
+        for contract in contract_data["information"]:
+            for sensor_def in sensor_definitions:
+                sensors.append(
+                    RepsolLuzYGasSensor(
+                        coordinator=coordinator,
+                        name=sensor_def["name"],
+                        variable=sensor_def["variable"],
+                        device_class=sensor_def["device_class"],
+                        is_master=sensor_def["is_master"],
+                        house_id=contract_data["house_id"],
+                        contractType=contract["contractType"],
+                        contract_id=contract["contract_id"],
+                        cups=contract["cups"],
+                    )
                 )
-            )
 
     async_add_entities(sensors, True)
 
@@ -153,11 +148,7 @@ class RepsolLuzYGasSensor(CoordinatorEntity, SensorEntity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        data = self.coordinator.data
-
-        # Accessing contracts data
-        if self.variable == "numberOfContracts":
-            return data.get("contracts", {}).get("numberOfContracts")
+        data = self.coordinator.data.get(self.contract_id, {})
 
         # Accessing costs data
         if self.variable in [
