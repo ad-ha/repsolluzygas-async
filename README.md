@@ -54,17 +54,6 @@ The current version supports the following sensors:
 - Enjoy!
 
 ## Version History
-
-```
-0.1.1
-- Initial Release
-- Add Next Invoice Amount Sensor (includes Amount, Variable Amount and Fixed Amount)
-- Add ConfigFlow configuration
-- Add HACS Custom Repository Configuration
-- Revised Average Amount to be pulled from API, instead of calculation
-- Implement Unique_Id for each sensor. The sensors are now configurable from UI.
-```
-
 ```
 0.1.3
 - Revise logics to enable CUPS data and Contract Type
@@ -78,6 +67,17 @@ The current version supports the following sensors:
 - Add Spanish translations to Config Flow
 - Update English labeling on Config Flow
 ```
+
+```
+0.1.1
+- Initial Release
+- Add Next Invoice Amount Sensor (includes Amount, Variable Amount and Fixed Amount)
+- Add ConfigFlow configuration
+- Add HACS Custom Repository Configuration
+- Revised Average Amount to be pulled from API, instead of calculation
+- Implement Unique_Id for each sensor. The sensors are now configurable from UI.
+```
+
 
 ## TO-DO
 
