@@ -55,6 +55,12 @@ The current version supports the following sensors:
 
 ## Version History
 ```
+0.1.4
+- Revise logic to segregate data for different Contracts (hopefully it will now work)
+- Remove Number of Contracts sensor, as it is now redundant information
+```
+
+```
 0.1.3
 - Revise logics to enable CUPS data and Contract Type
 - Revise the sensor details to include:
