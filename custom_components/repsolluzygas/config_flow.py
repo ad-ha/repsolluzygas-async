@@ -48,43 +48,54 @@ class RepsolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         api = self.hass.data[DOMAIN]["api"]
         contracts_data = await api.async_get_contracts()
 
-        # Assuming contracts_data now follows the structure:
-        # {'house_id': '...', 'numberOfContracts': 1, 'information': [{'contract_id': '...', 'type': '...', 'active': True}]}
         if not isinstance(contracts_data, dict) or "information" not in contracts_data:
             LOGGER.error("Unexpected contracts data structure: %s", contracts_data)
             errors["base"] = "invalid_contracts_data"
             return self.async_show_form(step_id="user", errors=errors)
 
         if user_input is not None:
-            try:
-                selected_contract = contracts_data["information"][
-                    int(user_input["contract_index"])
-                ]
-                self.hass.data[DOMAIN]["contract_id"] = selected_contract["contract_id"]
-                self.hass.data[DOMAIN]["house_id"] = contracts_data["house_id"]
-                return self.async_create_entry(
-                    title="Repsol Luz y Gas",
-                    data={
-                        **self.hass.data[DOMAIN]["credentials"],
-                        "contract_id": self.hass.data[DOMAIN]["contract_id"],
-                        "house_id": self.hass.data[DOMAIN]["house_id"],
-                    },
-                )
-            except (IndexError, KeyError, TypeError):
-                LOGGER.error("Error selecting contract with input %s", user_input)
-                errors["base"] = "invalid_contract_selection"
-                # Consider adding logic to handle or retry the selection
+            selected_contract = contracts_data["information"][
+                int(user_input["contract_index"])
+            ]
 
-        contracts_schema = vol.Schema(
+            # Check if the contract is already configured
+            existing_ids = {
+                entry.data["contract_id"] for entry in self._async_current_entries()
+            }
+            if selected_contract["contract_id"] in existing_ids:
+                errors["base"] = "already_configured"
+                return self.async_show_form(
+                    step_id="contract",
+                    data_schema=self._get_contracts_schema(contracts_data),
+                    errors=errors,
+                )
+
+            self.hass.data[DOMAIN]["contract_id"] = selected_contract["contract_id"]
+            self.hass.data[DOMAIN]["house_id"] = contracts_data["house_id"]
+            return self.async_create_entry(
+                title="Repsol Luz y Gas",
+                data={
+                    **self.hass.data[DOMAIN]["credentials"],
+                    "contract_id": self.hass.data[DOMAIN]["contract_id"],
+                    "house_id": self.hass.data[DOMAIN]["house_id"],
+                },
+            )
+
+        return self.async_show_form(
+            step_id="contract",
+            data_schema=self._get_contracts_schema(contracts_data),
+            errors=errors,
+        )
+
+    def _get_contracts_schema(self, contracts_data):
+        """Generate dynamic schema for contract selection based on available contracts."""
+        return vol.Schema(
             {
                 vol.Required("contract_index"): vol.In(
                     {
-                        i: f'{contract["contract_id"]} - {contract["type"]}'
+                        i: f'{contract["contractType"]} - {contract["cups"]}'
                         for i, contract in enumerate(contracts_data["information"])
                     }
                 ),
             }
-        )
-        return self.async_show_form(
-            step_id="contract", data_schema=contracts_schema, errors=errors
         )
