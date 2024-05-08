@@ -87,10 +87,10 @@ The current version supports the following sensors:
 
 ## TO-DO
 
-- Implement Gas Sensors (if you have this type of contract, please contact me)
-- Check multicontract capabilities, although it should work fine
 - Official HACS Release to use without Custom Repositories (currently pending approvals)
 - Figure out the SVAs information from API (Virtual Battery for PV Contracts and Additional Services)
+- ~~Implement Gas Sensors (if you have this type of contract, please contact me)~~
+- ~~Check multicontract capabilities, although it should work fine~~
 - ~~Add Device and append Contract Information (CUPS. House_id, Contract_id, etc..) as additional information~~
 - ~~Units from Home Assistant instead of fixed ones~~
 - ~~Address unique-ids for multicontracts, multihouses~~
