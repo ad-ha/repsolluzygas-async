@@ -1,6 +1,5 @@
 """Integration for Repsol Luz y Gas."""
 import aiohttp
-import async_timeout
 import asyncio
 
 from homeassistant.config_entries import ConfigEntry
@@ -8,18 +7,19 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from aiohttp.client_exceptions import ClientError
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
 
 from .const import (
     DOMAIN,
     LOGGER,
     LOGIN_URL,
     CONTRACTS_URL,
+    HOUSES_URL,
     INVOICES_URL,
     COSTS_URL,
     NEXT_INVOICE_URL,
     UPDATE_INTERVAL,
+    LOGIN_HEADERS,
+    CONTRACTS_HEADERS,
 )
 
 PLATFORMS: list[str] = ["sensor"]
@@ -79,16 +79,10 @@ async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
 
 
 async def async_update_data(client):
-    """Fetch data from API endpoint.
-
-    This is the place where you can add your logic to fetch data from the API.
-    """
-
     async def update_data():
         """Fetch data."""
         try:
-            async with async_timeout.timeout(10):
-                # Replace 'fetch_data' with the actual method of your API client
+            async with asyncio.timeout(10):
                 data = await client.fetch_data()
                 return data
         except (ClientError, asyncio.TimeoutError) as err:
@@ -127,73 +121,44 @@ class RepsolLuzYGasAPI:
             "lang": "en",
             "APIKey": "3_2MAJfXPA8zGLzfv2TRlhKGs3d6WdNsLU8unCCIGFhXMo9Ry49fG9k-aWG4SQY9_B",
             "format": "json",
-            # Add other data as needed based on the actual login requirements
         }
 
-        headers = {
-            "Connection": "keep-alive",
-            "Pragma": "no-cache",
-            "Cache-Control": "no-cache",
-            "sec-ch-ua": "^\\^Google",
-            "sec-ch-ua-mobile": "?0",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36",
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Accept": "*/*",
-            "Origin": "https://areacliente.repsolluzygas.com",
-            "Sec-Fetch-Site": "same-site",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Dest": "empty",
-            "Market": "ML",
-        }
+        headers = LOGIN_HEADERS.copy()
 
         try:
             async with self.session.post(
                 LOGIN_URL, headers=headers, cookies=self.cookies, data=data
             ) as response:
                 if response.status == 200:
-                    # Bypassing MIME type check and directly parsing as JSON
                     data = await response.json(content_type=None)
                     LOGGER.debug(f"Response: {data}")
-                    # Assuming the response contains a UID, signature, and timestamp for further requests
                     self.uid = data["userInfo"]["UID"]
                     self.signature = data["userInfo"]["UIDSignature"]
                     self.timestamp = data["userInfo"]["signatureTimestamp"]
                 else:
                     LOGGER.error(f"Unexpected response status: {response.status}")
-                    return None  # or handle as appropriate
+                    return None
         except Exception as e:
             LOGGER.error(f"Error during login to Repsol API: {e}")
-            return None  # or handle as appropriate
+            return None
 
     async def async_get_contracts(self):
         """Retrieve contracts."""
-        headers = {
-            "UID": self.uid,
-            "signature": self.signature,
-            "signatureTimestamp": self.timestamp,
-            "Sec-Fetch-Site": "same-origin",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Dest": "empty",
-            "Referer": "https://areacliente.repsolluzygas.com/mis-hogares",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Market": "ML",
-            "Connection": "keep-alive",
-            "Pragma": "no-cache",
-            "Cache-Control": "no-cache",
-            "sec-ch-ua": "^\\^Google",
-            "x-origin": "WEB",
-            "sec-ch-ua-mobile": "?0",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36",
-            "Accept": "application/json, text/plain, */*",
-            # Include any other headers your API requires
-        }
+        headers = CONTRACTS_HEADERS.copy()
+        headers.update(
+            {
+                "UID": self.uid,
+                "signature": self.signature,
+                "signatureTimestamp": self.timestamp,
+            }
+        )
 
         url = CONTRACTS_URL
 
         contracts = {}
 
         try:
-            async with async_timeout.timeout(10):
+            async with asyncio.timeout(10):
                 async with self.session.get(
                     url, headers=headers, cookies=self.cookies
                 ) as response:
@@ -204,9 +169,7 @@ class RepsolLuzYGasAPI:
                         LOGGER.debug("Contracts Data %s", data)
 
                         if data:  # Check if data is not empty
-                            data = data[
-                                0
-                            ]  # Assuming we're interested in the first house
+                            data = data[0]
                             contracts["house_id"] = data["code"]
                             contracts["information"] = []
 
@@ -220,45 +183,67 @@ class RepsolLuzYGasAPI:
 
                             LOGGER.debug("Contracts Parsed %s", contracts)
                         else:
-                            LOGGER.warning("No contract data received.")
+                            LOGGER.warning("No contract data received")
                     else:
                         LOGGER.error(
                             "Failed to fetch contracts data. HTTP Status: %s",
                             response.status,
                         )
-                        return None  # Consider returning an empty dict or specific error indicator as needed
+                        return None
         except Exception as e:
             LOGGER.error("Error fetching contracts data: %s", e)
-            return None  # Consider returning an empty dict or specific error indicator as needed
+            return None
 
         return contracts
 
+    async def async_get_houseDetails(self, house_id):
+        """Fetch house details including contracts and SVA data."""
+        headers = CONTRACTS_HEADERS.copy()
+        headers.update(
+            {
+                "UID": self.uid,
+                "signature": self.signature,
+                "signatureTimestamp": self.timestamp,
+            }
+        )
+
+        url = HOUSES_URL.format(house_id)
+
+        try:
+            async with asyncio.timeout(10):
+                async with self.session.get(
+                    url, headers=headers, cookies=self.cookies
+                ) as response:
+                    if response.status == 200:
+                        response_data = await response.json()
+
+                        LOGGER.debug("House Data %s", response_data)
+                        return response_data
+                    else:
+                        LOGGER.error(
+                            "Failed to fetch house data. HTTP Status: %s",
+                            response.status,
+                        )
+                        return None
+
+        except Exception as e:
+            LOGGER.error("Error fetching house data: %s", e)
+            return None
+
     async def async_get_invoices(self, house_id, contract_id):
         """Retrieve the latest invoice for a given contract."""
-        headers = {
-            "UID": self.uid,
-            "signature": self.signature,
-            "signatureTimestamp": self.timestamp,
-            "Sec-Fetch-Site": "same-origin",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Dest": "empty",
-            "Referer": "https://areacliente.repsolluzygas.com/mis-hogares",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Market": "ML",
-            "Connection": "keep-alive",
-            "Pragma": "no-cache",
-            "Cache-Control": "no-cache",
-            "sec-ch-ua": "^\\^Google",
-            "x-origin": "WEB",
-            "sec-ch-ua-mobile": "?0",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36",
-            "Accept": "application/json, text/plain, */*",
-            # Include any other headers your API requires
-        }
+        headers = CONTRACTS_HEADERS.copy()
+        headers.update(
+            {
+                "UID": self.uid,
+                "signature": self.signature,
+                "signatureTimestamp": self.timestamp,
+            }
+        )
         url = INVOICES_URL.format(house_id, contract_id)
 
         try:
-            async with async_timeout.timeout(10):
+            async with asyncio.timeout(10):
                 async with self.session.get(
                     url, headers=headers, cookies=self.cookies
                 ) as response:
@@ -273,34 +258,21 @@ class RepsolLuzYGasAPI:
                             response.status,
                         )
                         return None
-                    # Consider returning an empty dict or specific error indicator as needed
+
         except Exception as e:
             LOGGER.error("Error fetching invoice data: %s", e)
             return None
-        # Consider returning an empty dict or specific error indicator as needed
 
     async def async_get_costs(self, house_id, contract_id):
         """Retrieve cost data for a given contract."""
-        headers = {
-            "UID": self.uid,
-            "signature": self.signature,
-            "signatureTimestamp": self.timestamp,
-            "Sec-Fetch-Site": "same-origin",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Dest": "empty",
-            "Referer": "https://areacliente.repsolluzygas.com/mis-hogares",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Market": "ML",
-            "Connection": "keep-alive",
-            "Pragma": "no-cache",
-            "Cache-Control": "no-cache",
-            "sec-ch-ua": "^\\^Google",
-            "x-origin": "WEB",
-            "sec-ch-ua-mobile": "?0",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36",
-            "Accept": "application/json, text/plain, */*",
-            # Include any other headers your API requires
-        }
+        headers = CONTRACTS_HEADERS.copy()
+        headers.update(
+            {
+                "UID": self.uid,
+                "signature": self.signature,
+                "signatureTimestamp": self.timestamp,
+            }
+        )
         url = COSTS_URL.format(house_id, contract_id)
         data = {
             "totalDays": 0,
@@ -312,7 +284,7 @@ class RepsolLuzYGasAPI:
         }
 
         try:
-            async with async_timeout.timeout(10):
+            async with asyncio.timeout(10):
                 async with self.session.get(
                     url, headers=headers, cookies=self.cookies
                 ) as response:
@@ -335,26 +307,14 @@ class RepsolLuzYGasAPI:
 
     async def async_get_next_invoice(self, house_id, contract_id):
         """Retrieve cost data for a given contract."""
-        headers = {
-            "UID": self.uid,
-            "signature": self.signature,
-            "signatureTimestamp": self.timestamp,
-            "Sec-Fetch-Site": "same-origin",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Dest": "empty",
-            "Referer": "https://areacliente.repsolluzygas.com/mis-hogares",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Market": "ML",
-            "Connection": "keep-alive",
-            "Pragma": "no-cache",
-            "Cache-Control": "no-cache",
-            "sec-ch-ua": "^\\^Google",
-            "x-origin": "WEB",
-            "sec-ch-ua-mobile": "?0",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36",
-            "Accept": "application/json, text/plain, */*",
-            # Include any other headers your API requires
-        }
+        headers = CONTRACTS_HEADERS.copy()
+        headers.update(
+            {
+                "UID": self.uid,
+                "signature": self.signature,
+                "signatureTimestamp": self.timestamp,
+            }
+        )
         url = NEXT_INVOICE_URL.format(house_id, contract_id)
         data = {
             "amount": 0,
@@ -363,7 +323,7 @@ class RepsolLuzYGasAPI:
         }
 
         try:
-            async with async_timeout.timeout(10):
+            async with asyncio.timeout(10):
                 async with self.session.get(
                     url, headers=headers, cookies=self.cookies
                 ) as response:
@@ -436,7 +396,7 @@ class RepsolLuzYGasAPI:
             if len(contracts["information"]) > 0:
                 # Get the last invoice asynchronously
                 last_contract = contracts["information"][-1]
-                # Assuming you want the last contract
+
                 invoices = await self.async_get_invoices(
                     uid,
                     signature,
@@ -456,7 +416,7 @@ class RepsolLuzYGasAPI:
         try:
             await self.async_login()
             contracts_data = await self.async_get_contracts()
-            # Assume contracts_data contains a list of contracts with IDs
+
             if not contracts_data:
                 raise Exception("Failed to fetch contracts.")
 
@@ -464,6 +424,7 @@ class RepsolLuzYGasAPI:
             for contract in contracts_data.get("information", []):
                 house_id = contracts_data["house_id"]
                 contract_id = contract["contract_id"]
+                house_data = await self.async_get_houseDetails(house_id)
                 invoices_data = await self.async_get_invoices(house_id, contract_id)
                 costs_data = await self.async_get_costs(house_id, contract_id)
                 next_invoice_data = await self.async_get_next_invoice(
@@ -472,6 +433,7 @@ class RepsolLuzYGasAPI:
 
                 all_data[contract_id] = {
                     "contracts": contract,
+                    "house_data": house_data,
                     "invoices": invoices_data,
                     "costs": costs_data,
                     "nextInvoice": next_invoice_data,
@@ -482,5 +444,4 @@ class RepsolLuzYGasAPI:
 
         except Exception as e:
             LOGGER.error(f"Error fetching all data: {e}")
-            # Handle error as appropriate, possibly re-raising it
             raise
