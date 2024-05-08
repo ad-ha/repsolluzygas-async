@@ -4,8 +4,6 @@ from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.helpers.entity import DeviceInfo
 from . import DOMAIN, LOGGER, RepsolLuzYGasAPI
 
-import logging
-
 
 async def async_setup_entry(hass, entry, async_add_entities):
     """Set up Repsol Luz y Gas sensors based on a config entry."""
@@ -18,14 +16,15 @@ async def async_setup_entry(hass, entry, async_add_entities):
         return
 
     contract_data = await api.async_get_contracts()
+    if not contract_data:
+        LOGGER.error("No contract data available.")
+        return
 
-    # List to hold all our sensors
+    # List to hold all sensors
     sensors = []
 
     # Define sensor names, variables, units, and if it's a master sensor
-    for contract in contract_data[
-        "information"
-    ]:  # Correctly iterate over 'information' which contains the contracts
+    for contract in contract_data["information"]:
         sensor_definitions = [
             {
                 "name": "Amount",
@@ -111,7 +110,24 @@ async def async_setup_entry(hass, entry, async_add_entities):
                     )
                 )
 
+    house_data = await api.async_get_houseDetails(contract_data["house_id"])
+    if house_data:
+        for contract in house_data.get("contracts", []):
+            if "sva" in contract:
+                for sva_detail in contract["sva"]:
+                    sensors.append(
+                        SVASensor(
+                            coordinator=coordinator,
+                            house_id=contract_data["house_id"],
+                            name=sva_detail["name"],
+                            code=sva_detail["code"],
+                        )
+                    )
+    else:
+        LOGGER.error(f"Failed to fetch or find SVA data in house details: {house_data}")
+
     async_add_entities(sensors, True)
+    LOGGER.info(f"Added {len(sensors)} sensors")
 
 
 class RepsolLuzYGasSensor(CoordinatorEntity, SensorEntity):
@@ -216,3 +232,40 @@ class RepsolLuzYGasSensor(CoordinatorEntity, SensorEntity):
     def update(self):
         """Update the sensor (handled by the Coordinator)."""
         pass
+
+
+class SVASensor(CoordinatorEntity, SensorEntity):
+    """Sensor for displaying SVA details of a house."""
+
+    def __init__(self, coordinator, house_id, name, code):
+        """Initialize the sensor."""
+        super().__init__(coordinator)
+        self.house_id = house_id
+        self._attr_name = f"{name}"
+        self.code = code
+
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        return self._attr_name
+
+    @property
+    def unique_id(self):
+        """Return a unique ID for this sensor."""
+        return f"{self.house_id}_{self.code}"
+
+    @property
+    def device_info(self):
+        """Return device info to group sensors under a single device."""
+        return {
+            "identifiers": {(DOMAIN, self.house_id)},
+            "name": f"SVA - {self.house_id}",
+            "manufacturer": "Repsol Luz y Gas",
+            "model": "SVAs",
+            "serial_number": f"{self.house_id}",
+            "configuration_url": f"https://areacliente.repsolluzygas.com/mis-productos",
+        }
+
+    @property
+    def state(self):
+        return self.code
