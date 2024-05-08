@@ -55,6 +55,18 @@ The current version supports the following sensors:
 
 ## Version History
 ```
+1.0.1
+- Code cleanup
+- Add SVAs queries from API
+- Move headers and other constants to const.py
+- Add new SVAs device for each house
+- Add SVAs sensors, in preparation for further developments
+- Import headers
+- Add HOUSES_URL for new SVA sensors
+- Preparation for next releases and new contract detail sensors
+```
+
+```
 0.1.4
 - Revise logic to segregate data for different Contracts (hopefully it will now work)
 - Remove Number of Contracts sensor, as it is now redundant information
