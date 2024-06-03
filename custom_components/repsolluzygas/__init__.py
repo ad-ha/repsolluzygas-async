@@ -17,9 +17,13 @@ from .const import (
     INVOICES_URL,
     COSTS_URL,
     NEXT_INVOICE_URL,
+    VIRTUAL_BATTERY_DETAILS_URL,
+    VIRTUAL_BATTERY_HISTORY_URL,
     UPDATE_INTERVAL,
     LOGIN_HEADERS,
     CONTRACTS_HEADERS,
+    COOKIES_CONST,
+    LOGIN_DATA,
 )
 
 PLATFORMS: list[str] = ["sensor"]
@@ -104,24 +108,17 @@ class RepsolLuzYGasAPI:
         self.signature = None
         self.timestamp = None
 
-    cookies = {
-        "gmid": "gmid.ver4.AcbHSBMhFw.1PO5AEWAU-E5wcBXeuZT_c_uz5VVE_t3ZPwM8tKdJgOFsVf0lDmNsBlpecXxwdf0.Zo36FXG0Nnu7Dxd6z0ZedVvVW6U-G9DQlNq1ofie-ez5wHw5SuID3P6jzqbLsuL7BIPqFup0n6D4LSsjS7YKPg.sc3",
-        "ucid": "TiA7xpk2tJCJIn50B0CuzQ",
-        "hasGmid": "ver4",
-        "gig_bootstrap_3_2MAJfXPA8zGLzfv2TRlhKGs3d6WdNsLU8unCCIGFhXMo9Ry49fG9k-aWG4SQY9_B": "gigya_ver4",
-    }
+    cookies = COOKIES_CONST.copy()
 
     async def async_login(self):
         """Async login to Repsol API."""
-        data = {
-            "loginID": self.username,
-            "password": self.password,
-            "targetEnv": "jssdk",
-            "includeUserInfo": "true",
-            "lang": "en",
-            "APIKey": "3_2MAJfXPA8zGLzfv2TRlhKGs3d6WdNsLU8unCCIGFhXMo9Ry49fG9k-aWG4SQY9_B",
-            "format": "json",
-        }
+        data = LOGIN_DATA.copy()
+        data.update(
+            {
+                "loginID": self.username,
+                "password": self.password,
+            }
+        )
 
         headers = LOGIN_HEADERS.copy()
 
@@ -344,6 +341,78 @@ class RepsolLuzYGasAPI:
 
         return data
 
+    def extract_sva_ids(self, house_details):
+        """Extract SVA IDs from house details response."""
+        sva_ids = []
+        for contract in house_details.get("contracts", []):
+            for sva in contract.get("sva", []):
+                sva_ids.append(sva["code"])
+        return sva_ids
+
+    async def async_get_virtual_battery_details(self, house_id, contract_id):
+        headers = CONTRACTS_HEADERS.copy()
+        headers.update(
+            {
+                "UID": self.uid,
+                "signature": self.signature,
+                "signatureTimestamp": self.timestamp,
+            }
+        )
+        url = VIRTUAL_BATTERY_DETAILS_URL.format(house_id, contract_id)
+
+        try:
+            async with asyncio.timeout(10):
+                async with self.session.get(
+                    url, headers=headers, cookies=self.cookies
+                ) as response:
+                    if response.status == 200:
+                        response_data = await response.json()
+
+                        LOGGER.debug("Virtual Battery Data %s", response_data)
+                        return response_data
+                    else:
+                        LOGGER.error(
+                            "Failed to fetch Virtual Battery data. HTTP Status: %s",
+                            response.status,
+                        )
+                        return None
+
+        except Exception as e:
+            LOGGER.error("Error fetching Virtual Battery data: %s", e)
+            return None
+
+    async def async_get_virtual_battery_history(self, house_id, contract_id):
+        headers = CONTRACTS_HEADERS.copy()
+        headers.update(
+            {
+                "UID": self.uid,
+                "signature": self.signature,
+                "signatureTimestamp": self.timestamp,
+            }
+        )
+        url = VIRTUAL_BATTERY_HISTORY_URL.format(house_id, contract_id)
+
+        try:
+            async with asyncio.timeout(10):
+                async with self.session.get(
+                    url, headers=headers, cookies=self.cookies
+                ) as response:
+                    if response.status == 200:
+                        response_data = await response.json()
+
+                        LOGGER.debug("Virtual Battery History Data %s", response_data)
+                        return response_data
+                    else:
+                        LOGGER.error(
+                            "Failed to fetch Virtual Battery History data. HTTP Status: %s",
+                            response.status,
+                        )
+                        return None
+
+        except Exception as e:
+            LOGGER.error("Error fetching Virtual Battery History data: %s", e)
+            return None
+
     async def async_update(self):
         """Asynchronously update data from the Repsol API."""
         data = {
@@ -430,6 +499,12 @@ class RepsolLuzYGasAPI:
                 next_invoice_data = await self.async_get_next_invoice(
                     house_id, contract_id
                 )
+                virtual_battery_data = await self.async_get_virtual_battery_details(
+                    house_id, contract_id
+                )
+                virtual_battery_history_data = (
+                    await self.async_get_virtual_battery_history(house_id, contract_id)
+                )
 
                 all_data[contract_id] = {
                     "contracts": contract,
@@ -437,6 +512,8 @@ class RepsolLuzYGasAPI:
                     "invoices": invoices_data,
                     "costs": costs_data,
                     "nextInvoice": next_invoice_data,
+                    "virtual_battery_details": virtual_battery_data,
+                    "virtual_battery_history": virtual_battery_history_data,
                 }
             LOGGER.debug("Sensor Data %s", all_data)
 
