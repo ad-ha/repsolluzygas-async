@@ -123,6 +123,98 @@ async def async_setup_entry(hass, entry, async_add_entities):
                             code=sva_detail["code"],
                         )
                     )
+
+        for contract in contract_data["information"]:
+            virtual_battery_data = await api.async_get_virtual_battery_details(
+                contract_data["house_id"], contract["contract_id"]
+            )
+            virtual_battery_history_data = await api.async_get_virtual_battery_history(
+                contract_data["house_id"], contract["contract_id"]
+            )
+            if virtual_battery_data:
+                virtual_battery_sensors = [
+                    {
+                        "name": "Virtual Battery Amount Available",
+                        "variable": "amountAvailable",
+                        "device_class": SensorDeviceClass.MONETARY,
+                    },
+                    {
+                        "name": "Virtual Battery kWh Available",
+                        "variable": "kwhAvailable",
+                        "device_class": SensorDeviceClass.ENERGY,
+                    },
+                    {
+                        "name": "Virtual Battery Total Amount Redeemed",
+                        "variable": "amountRedeemed",
+                        "device_class": SensorDeviceClass.MONETARY,
+                    },
+                    {
+                        "name": "Virtual Battery Total kWh Redeemed",
+                        "variable": "kwhRedeemed",
+                        "device_class": SensorDeviceClass.ENERGY,
+                    },
+                ]
+
+                for sensor_def in virtual_battery_sensors:
+                    sensors.append(
+                        VirtualBatterySensor(
+                            coordinator=coordinator,
+                            name=sensor_def["name"],
+                            variable=sensor_def["variable"],
+                            device_class=sensor_def["device_class"],
+                            house_id=contract_data["house_id"],
+                            contract_id=contract["contract_id"],
+                        )
+                    )
+
+                for coupon in virtual_battery_data.get("coupons", []):
+                    sensors.append(
+                        VirtualBatterySensor(
+                            coordinator=coordinator,
+                            name=f"Last Amount Redeemed",
+                            variable="amount",
+                            device_class=SensorDeviceClass.MONETARY,
+                            house_id=contract_data["house_id"],
+                            contract_id=contract["contract_id"],
+                            coupon_data=coupon,
+                        )
+                    )
+                    sensors.append(
+                        VirtualBatterySensor(
+                            coordinator=coordinator,
+                            name=f"Last kWh Redeemed",
+                            variable="kwh",
+                            device_class=SensorDeviceClass.ENERGY,
+                            house_id=contract_data["house_id"],
+                            contract_id=contract["contract_id"],
+                            coupon_data=coupon,
+                        )
+                    )
+
+                if virtual_battery_history_data:
+                    history_sensors = [
+                        {
+                            "name": "Virtual Battery Total kWh Charged",
+                            "variable": "chargeTotalKwh",
+                            "device_class": SensorDeviceClass.ENERGY,
+                        },
+                        {
+                            "name": "Virtual Battery Total kWh Discharge",
+                            "variable": "dischargeTotalKwh",
+                            "device_class": SensorDeviceClass.ENERGY,
+                        },
+                    ]
+                    for sensor_def in history_sensors:
+                        sensors.append(
+                            VirtualBatterySensor(
+                                coordinator=coordinator,
+                                name=sensor_def["name"],
+                                variable=sensor_def["variable"],
+                                device_class=sensor_def["device_class"],
+                                house_id=contract_data["house_id"],
+                                contract_id=contract["contract_id"],
+                            )
+                        )
     else:
         LOGGER.error(f"Failed to fetch or find SVA data in house details: {house_data}")
 
@@ -234,6 +326,79 @@ class RepsolLuzYGasSensor(CoordinatorEntity, SensorEntity):
         pass
 
 
+class VirtualBatterySensor(CoordinatorEntity, SensorEntity):
+    """Representation of a Virtual Battery Sensor."""
+
+    def __init__(
+        self,
+        coordinator,
+        name,
+        variable,
+        device_class,
+        house_id,
+        contract_id,
+        coupon_data=None,
+    ):
+        """Initialize the sensor."""
+        super().__init__(coordinator)
+        self._attr_name = f"Repsol {house_id} {name}"
+        self.variable = variable
+        self._attr_device_class = device_class
+        self.house_id = house_id
+        self.contract_id = contract_id
+        self.coupon_data = coupon_data
+
+    @property
+    def name(self):
+        """Return the name of the sensor."""
+        return self._attr_name
+
+    @property
+    def state(self):
+        """Return the state of the sensor."""
+        data = self.coordinator.data.get(self.contract_id, {}).get(
+            "virtual_battery_details", {}
+        )
+        history_data = self.coordinator.data.get(self.contract_id, {}).get(
+            "virtual_battery_history", {}
+        )
+        if self.coupon_data:
+            return self.coupon_data.get(self.variable, "Unavailable")
+        if self.variable in ["chargeTotalKwh", "dischargeTotalKwh"]:
+            return history_data.get(self.variable, "Unavailable")
+        return data.get(self.variable, "Unavailable")
+
+    @property
+    def unique_id(self):
+        """Return a unique ID."""
+        if self.coupon_data:
+            return f"{self.house_id}_{self.contract_id}_{self.variable}_{self.coupon_data['houseName']}"
+        return f"{self.house_id}_{self.contract_id}_{self.variable}"
+
+    @property
+    def device_info(self):
+        """Return information about the device."""
+        return {
+            "identifiers": {
+                (DOMAIN, f"virtual_battery_{self.house_id}_{self.contract_id}")
+            },
+            "name": f"Virtual Battery - {self.house_id}",
+            "manufacturer": "Repsol Luz y Gas",
+            "model": "Virtual Battery",
+            "serial_number": f"{self.house_id}",
+            "configuration_url": f"https://areacliente.repsolluzygas.com/mis-hogares",
+        }
+
+    @property
+    def unit_of_measurement(self):
+        """Return the unit of measurement based on the device class."""
+        if self._attr_device_class == SensorDeviceClass.ENERGY:
+            return "kWh"
+        elif self._attr_device_class == SensorDeviceClass.MONETARY:
+            return "EUR"
+        return None
+
+
 class SVASensor(CoordinatorEntity, SensorEntity):
     """Sensor for displaying SVA details of a house."""
 
@@ -248,6 +413,11 @@ class SVASensor(CoordinatorEntity, SensorEntity):
     def name(self):
         """Return the name of the sensor."""
         return self._attr_name
+
+    @property
+    def state(self):
+        """Return the state of the sensor."""
+        return self.code
 
     @property
     def unique_id(self):
@@ -267,5 +437,6 @@ class SVASensor(CoordinatorEntity, SensorEntity):
         }
 
     @property
-    def state(self):
-        return self.code
+    def unit_of_measurement(self):
+        """Return the unit of measurement based on the device class."""
+        return None
