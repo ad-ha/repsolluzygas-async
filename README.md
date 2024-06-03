@@ -55,6 +55,18 @@ The current version supports the following sensors:
 
 ## Version History
 ```
+1.1.1
+- Code cleanup
+- Update API addresses to newest Repsol releases
+- Move several constants to const.py
+- Add Virtual Battery Device and Sensors:
+  - Current Status (€ and kWh)
+  - Last Redeemed Status (€ and kWh)
+  - Total kWh Charges/Discharges 
+- Created new Contract Sensor (for ELECTRICITY only) with attributes: Power, Contract Description, Tariff, Status, CUPS
+```
+
+```
 1.0.1
 - Code cleanup
 - Add SVAs queries from API
