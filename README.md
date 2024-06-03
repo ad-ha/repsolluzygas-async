@@ -63,7 +63,6 @@ The current version supports the following sensors:
   - Current Status (€ and kWh)
   - Last Redeemed Status (€ and kWh)
   - Total kWh Charges/Discharges 
-- Created new Contract Sensor (for ELECTRICITY only) with attributes: Power, Contract Description, Tariff, Status, CUPS
 ```
 
 ```
@@ -112,7 +111,8 @@ The current version supports the following sensors:
 ## TO-DO
 
 - Official HACS Release to use without Custom Repositories (currently pending approvals)
-- Figure out the SVAs information from API (Virtual Battery for PV Contracts and Additional Services)
+- Add new sensors for Power, Fee, Contract Description
+- ~~Figure out the SVAs information from API (Virtual Battery for PV Contracts and Additional Services)~~
 - ~~Implement Gas Sensors (if you have this type of contract, please contact me)~~
 - ~~Check multicontract capabilities, although it should work fine~~
 - ~~Add Device and append Contract Information (CUPS. House_id, Contract_id, etc..) as additional information~~
