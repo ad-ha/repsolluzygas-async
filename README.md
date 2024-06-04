@@ -7,7 +7,7 @@
 
 # REPSOL LUZ Y GAS API for Home Assistant
 
-Custom Integration for Home Assistant to connect and display data for Electricity Contracts with Repsol Luz y Gas.
+Custom Integration for Home Assistant to connect and display data for Electricity, Gas and SVA Contracts with Repsol Luz y Gas.
 
 This integration is based on the initial integration done by [bbzoiro](https://github.com/bzzoiro/repsolluzygas)
 
@@ -17,9 +17,11 @@ This integration has been redesigned to implement async methods and to allow the
 
 This also supports Multi-house and Multi-Contracts.
 
-The current version supports the following sensors:
+The current version supports the following:
 
-![image](https://github.com/ad-ha/repsolluzygas-async/assets/59612788/44be4adc-d46e-4ef3-acd9-9977b3dd2900)
+![image](https://github.com/ad-ha/repsolluzygas-async/assets/59612788/e8be456f-2b27-4eb4-95f6-253908e2a185)
+
+![image](https://github.com/ad-ha/repsolluzygas-async/assets/59612788/69bb3eee-b638-4e1c-8d37-e47436d7db78)
 
 
 ### Installation
@@ -54,6 +56,16 @@ The current version supports the following sensors:
 - Enjoy!
 
 ## Version History
+```
+1.2.1
+- Add new sensors for ELECTRICITY Contracts:
+  - Contract Status
+  - Energy Price
+  - Power Prices (Punta y Valle)
+  - Power
+  - Tariff
+```
+
 ```
 1.1.1
 - Code cleanup
