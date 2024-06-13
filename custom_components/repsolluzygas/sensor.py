@@ -206,27 +206,41 @@ async def async_setup_entry(hass, entry, async_add_entities):
                     )
                 )
 
-            for coupon in virtual_battery_data.get("coupons", []):
+            # Extract the latest discharge values for "Last Amount Redeemed" and "Last kWh Redeemed"
+            last_discharge = next(
+                (
+                    movement
+                    for movement in sorted(
+                        virtual_battery_history_data.get("movements", []),
+                        key=lambda x: x["date"],
+                        reverse=True,
+                    )
+                    if movement["type"] == "DISCHARGE"
+                ),
+                None,
+            )
+
+            if last_discharge:
                 sensors.append(
                     VirtualBatterySensor(
                         coordinator=coordinator,
-                        name=f"Last Amount Redeemed",
+                        name="Last Amount Redeemed",
                         variable="amount",
                         device_class=SensorDeviceClass.MONETARY,
                         house_id=contract_data["house_id"],
                         contract_id=contract["contract_id"],
-                        coupon_data=coupon,
+                        coupon_data=last_discharge,
                     )
                 )
                 sensors.append(
                     VirtualBatterySensor(
                         coordinator=coordinator,
-                        name=f"Last kWh Redeemed",
+                        name="Last kWh Redeemed",
                         variable="kwh",
                         device_class=SensorDeviceClass.ENERGY,
                         house_id=contract_data["house_id"],
                         contract_id=contract["contract_id"],
-                        coupon_data=coupon,
+                        coupon_data=last_discharge,
                     )
                 )
 
@@ -475,7 +489,7 @@ class VirtualBatterySensor(CoordinatorEntity, SensorEntity):
     def unique_id(self):
         """Return a unique ID."""
         if self.coupon_data:
-            return f"{self.house_id}_{self.contract_id}_{self.variable}_{self.coupon_data['houseName']}"
+            return f"{self.house_id}_{self.contract_id}_{self.variable}_{self.coupon_data['date']}"
         return f"{self.house_id}_{self.contract_id}_{self.variable}"
 
     @property
