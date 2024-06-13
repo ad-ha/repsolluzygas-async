@@ -49,6 +49,7 @@ The current version supports the following:
 [<img src="https://github.com/ad-ha/repsolluzygas-async/assets/59612788/e9d46e15-eee7-41e4-ba1b-bb09e9bbbcfd">](https://my.home-assistant.io/redirect/config_flow_start?domain=repsolluzygas)
 
 - Go to Settings > Devices & Services > Add Integration > Repsol Luz y Gas
+  
   ![image](https://github.com/ad-ha/repsolluzygas-async/assets/59612788/91309474-fdf5-4b7b-a73b-1d5d116fd0ab)
 
 - Use your Username and Password
@@ -56,6 +57,11 @@ The current version supports the following:
 - Enjoy!
 
 ## Version History
+```
+1.2.2
+- Revise latest Virtual Battery Redeemed Sensors
+```
+
 ```
 1.2.1
 - Add new sensors for ELECTRICITY Contracts:
@@ -123,7 +129,7 @@ The current version supports the following:
 ## TO-DO
 
 - Official HACS Release to use without Custom Repositories (currently pending approvals)
-- Add new sensors for Power, Fee, Contract Description
+- ~~Add new sensors for Power, Fee, Contract Description~~
 - ~~Figure out the SVAs information from API (Virtual Battery for PV Contracts and Additional Services)~~
 - ~~Implement Gas Sensors (if you have this type of contract, please contact me)~~
 - ~~Check multicontract capabilities, although it should work fine~~
