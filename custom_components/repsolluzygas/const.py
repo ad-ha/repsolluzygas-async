@@ -13,9 +13,6 @@ COSTS_URL = f"{BASE_API_URL}houses/{{}}/products/{{}}/consumption/accumulated"
 NEXT_INVOICE_URL = (
     f"{BASE_API_URL}houses/{{}}/products/{{}}/consumption/invoice-estimate"
 )
-VIRTUAL_BATTERY_DETAILS_URL = (
-    f"{BASE_API_URL}houses/{{}}/products/{{}}/virtual-battery/detail"
-)
 VIRTUAL_BATTERY_HISTORY_URL = (
     f"{BASE_API_URL}houses/{{}}/products/{{}}/virtual-battery/history"
 )

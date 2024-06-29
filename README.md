@@ -58,6 +58,13 @@ The current version supports the following:
 
 ## Version History
 ```
+1.3.0
+- Adapt the Virtual Battery Sensors to the new scheme from the API
+- Rewrite code for sensors and Virtual Battery Data
+- Redefine unique_id generation for Virtual Battery Sensors
+```
+
+```
 1.2.2
 - Revise latest Virtual Battery Redeemed Sensors
 ```
