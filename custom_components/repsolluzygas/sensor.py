@@ -164,17 +164,14 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 )
 
     for contract in contract_data["information"]:
-        virtual_battery_data = await api.async_get_virtual_battery_details(
-            contract_data["house_id"], contract["contract_id"]
-        )
-        virtual_battery_history_data = await api.async_get_virtual_battery_history(
+        virtual_battery_data = await api.async_get_virtual_battery_history(
             contract_data["house_id"], contract["contract_id"]
         )
         if virtual_battery_data:
             virtual_battery_sensors = [
                 {
-                    "name": "Virtual Battery Amount Available",
-                    "variable": "amountAvailable",
+                    "name": "Virtual Battery Amount Pending",
+                    "variable": "pendingAmount",
                     "device_class": SensorDeviceClass.MONETARY,
                 },
                 {
@@ -183,14 +180,29 @@ async def async_setup_entry(hass, entry, async_add_entities):
                     "device_class": SensorDeviceClass.ENERGY,
                 },
                 {
+                    "name": "Virtual Battery Amount Available",
+                    "variable": "amountAvailable",
+                    "device_class": SensorDeviceClass.MONETARY,
+                },
+                {
                     "name": "Virtual Battery Total Amount Redeemed",
-                    "variable": "amountRedeemed",
+                    "variable": "appliedAmount",
                     "device_class": SensorDeviceClass.MONETARY,
                 },
                 {
                     "name": "Virtual Battery Total kWh Redeemed",
                     "variable": "kwhRedeemed",
                     "device_class": SensorDeviceClass.ENERGY,
+                },
+                {
+                    "name": "Virtual Battery Total kWh Charged",
+                    "variable": "totalKWh",
+                    "device_class": SensorDeviceClass.ENERGY,
+                },
+                {
+                    "name": "Virtual Battery Excedents Price",
+                    "variable": "excedentsPrice",
+                    "device_class": SensorDeviceClass.MONETARY,
                 },
             ]
 
@@ -207,20 +219,13 @@ async def async_setup_entry(hass, entry, async_add_entities):
                 )
 
             # Extract the latest discharge values for "Last Amount Redeemed" and "Last kWh Redeemed"
-            last_discharge = next(
-                (
-                    movement
-                    for movement in sorted(
-                        virtual_battery_history_data.get("movements", []),
-                        key=lambda x: x["date"],
-                        reverse=True,
-                    )
-                    if movement["type"] == "DISCHARGE"
-                ),
-                None,
+            last_redeemed = max(
+                virtual_battery_data.get("discounts", {}).get("data", []),
+                key=lambda x: x["billingDate"],
+                default=None,
             )
 
-            if last_discharge:
+            if last_redeemed:
                 sensors.append(
                     VirtualBatterySensor(
                         coordinator=coordinator,
@@ -229,45 +234,20 @@ async def async_setup_entry(hass, entry, async_add_entities):
                         device_class=SensorDeviceClass.MONETARY,
                         house_id=contract_data["house_id"],
                         contract_id=contract["contract_id"],
-                        coupon_data=last_discharge,
+                        coupon_data=last_redeemed,
                     )
                 )
                 sensors.append(
                     VirtualBatterySensor(
                         coordinator=coordinator,
                         name="Last kWh Redeemed",
-                        variable="kwh",
+                        variable="kWh",
                         device_class=SensorDeviceClass.ENERGY,
                         house_id=contract_data["house_id"],
                         contract_id=contract["contract_id"],
-                        coupon_data=last_discharge,
+                        coupon_data=last_redeemed,
                     )
                 )
-
-            if virtual_battery_history_data:
-                history_sensors = [
-                    {
-                        "name": "Virtual Battery Total kWh Charged",
-                        "variable": "chargeTotalKwh",
-                        "device_class": SensorDeviceClass.ENERGY,
-                    },
-                    {
-                        "name": "Virtual Battery Total kWh Discharge",
-                        "variable": "dischargeTotalKwh",
-                        "device_class": SensorDeviceClass.ENERGY,
-                    },
-                ]
-                for sensor_def in history_sensors:
-                    sensors.append(
-                        VirtualBatterySensor(
-                            coordinator=coordinator,
-                            name=sensor_def["name"],
-                            variable=sensor_def["variable"],
-                            device_class=sensor_def["device_class"],
-                            house_id=contract_data["house_id"],
-                            contract_id=contract["contract_id"],
-                        )
-                    )
 
     async_add_entities(sensors, True)
     LOGGER.info(f"Added {len(sensors)} sensors")
@@ -422,7 +402,7 @@ class RepsolLuzYGasSensor(CoordinatorEntity, SensorEntity):
             "manufacturer": "Repsol Luz y Gas",
             "model": f"{self.contractType} - {self.cups}",
             "serial_number": f"{self.contract_id}",
-            "configuration_url": f"https://areacliente.repsolluzygas.com/mis-hogares",
+            "configuration_url": f"https://areacliente.repsol.es/productos-y-servicios",
         }
 
     @property
@@ -474,23 +454,85 @@ class VirtualBatterySensor(CoordinatorEntity, SensorEntity):
     def state(self):
         """Return the state of the sensor."""
         data = self.coordinator.data.get(self.contract_id, {}).get(
-            "virtual_battery_details", {}
-        )
-        history_data = self.coordinator.data.get(self.contract_id, {}).get(
             "virtual_battery_history", {}
         )
+        discounts = data.get("discounts", {})
+        excedents = data.get("excedents", {})
+
         if self.coupon_data:
             return self.coupon_data.get(self.variable, "Unavailable")
-        if self.variable in ["chargeTotalKwh", "dischargeTotalKwh"]:
-            return history_data.get(self.variable, "Unavailable")
-        return data.get(self.variable, "Unavailable")
+
+        if self.variable == "pendingAmount":
+            return next(
+                (
+                    c["pendingAmount"]
+                    for c in discounts.get("contracts", [])
+                    if c["productCode"] == self.contract_id
+                ),
+                "Unavailable",
+            )
+
+        if self.variable == "kwhAvailable":
+            pending_amount = next(
+                (
+                    c["pendingAmount"]
+                    for c in discounts.get("contracts", [])
+                    if c["productCode"] == self.contract_id
+                ),
+                0,
+            )
+            conversion_price = next(
+                (d["conversionPrice"] for d in excedents.get("data", [])), "Unavailable"
+            )
+            return (
+                round(pending_amount / conversion_price, 2)
+                if conversion_price
+                else "Unavailable"
+            )
+
+        if self.variable == "amountAvailable":
+            total_amount = excedents.get("totalAmount", 0)
+            applied_amount = excedents.get("appliedAmount", 0)
+            pending_amount = next(
+                (
+                    c["pendingAmount"]
+                    for c in discounts.get("contracts", [])
+                    if c["productCode"] == self.contract_id
+                ),
+                0,
+            )
+            return total_amount - applied_amount - pending_amount
+
+        if self.variable == "appliedAmount":
+            return excedents.get("appliedAmount", "Unavailable")
+
+        if self.variable == "kwhRedeemed":
+            applied_amount = excedents.get("appliedAmount", 0)
+            conversion_price = next(
+                (d["conversionPrice"] for d in excedents.get("data", [])), "Unavailable"
+            )
+            return (
+                round(applied_amount / conversion_price, 2)
+                if conversion_price
+                else "Unavailable"
+            )
+
+        if self.variable == "totalKWh":
+            return round(excedents.get("totalkWh", 0), 2)
+
+        if self.variable == "excedentsPrice":
+            return next(
+                (d["conversionPrice"] for d in excedents.get("data", [])), "Unavailable"
+            )
+
+        return "Unavailable"
 
     @property
     def unique_id(self):
         """Return a unique ID."""
         if self.coupon_data:
-            return f"{self.house_id}_{self.contract_id}_{self.variable}_{self.coupon_data['date']}"
-        return f"{self.house_id}_{self.contract_id}_{self.variable}"
+            return f"{self.house_id}_{self.contract_id}_{self.variable}_vb"
+        return f"{self.house_id}_{self.contract_id}_{self.variable}_vb"
 
     @property
     def device_info(self):
@@ -503,7 +545,7 @@ class VirtualBatterySensor(CoordinatorEntity, SensorEntity):
             "manufacturer": "Repsol Luz y Gas",
             "model": "Virtual Battery",
             "serial_number": f"{self.house_id}",
-            "configuration_url": f"https://areacliente.repsolluzygas.com/mis-hogares",
+            "configuration_url": f"https://areacliente.repsol.es/productos-y-servicios",
         }
 
     @property
@@ -550,7 +592,7 @@ class SVASensor(CoordinatorEntity, SensorEntity):
             "manufacturer": "Repsol Luz y Gas",
             "model": "SVAs",
             "serial_number": f"{self.house_id}",
-            "configuration_url": f"https://areacliente.repsolluzygas.com/mis-productos",
+            "configuration_url": f"https://areacliente.repsol.es/productos-y-servicios",
         }
 
     @property
