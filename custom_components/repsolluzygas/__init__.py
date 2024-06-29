@@ -17,7 +17,6 @@ from .const import (
     INVOICES_URL,
     COSTS_URL,
     NEXT_INVOICE_URL,
-    VIRTUAL_BATTERY_DETAILS_URL,
     VIRTUAL_BATTERY_HISTORY_URL,
     UPDATE_INTERVAL,
     LOGIN_HEADERS,
@@ -349,38 +348,6 @@ class RepsolLuzYGasAPI:
                 sva_ids.append(sva["code"])
         return sva_ids
 
-    async def async_get_virtual_battery_details(self, house_id, contract_id):
-        headers = CONTRACTS_HEADERS.copy()
-        headers.update(
-            {
-                "UID": self.uid,
-                "signature": self.signature,
-                "signatureTimestamp": self.timestamp,
-            }
-        )
-        url = VIRTUAL_BATTERY_DETAILS_URL.format(house_id, contract_id)
-
-        try:
-            async with asyncio.timeout(10):
-                async with self.session.get(
-                    url, headers=headers, cookies=self.cookies
-                ) as response:
-                    if response.status == 200:
-                        response_data = await response.json()
-
-                        LOGGER.debug("Virtual Battery Data %s", response_data)
-                        return response_data
-                    else:
-                        LOGGER.error(
-                            "Failed to fetch Virtual Battery data. HTTP Status: %s",
-                            response.status,
-                        )
-                        return None
-
-        except Exception as e:
-            LOGGER.error("Error fetching Virtual Battery data: %s", e)
-            return None
-
     async def async_get_virtual_battery_history(self, house_id, contract_id):
         headers = CONTRACTS_HEADERS.copy()
         headers.update(
@@ -499,9 +466,6 @@ class RepsolLuzYGasAPI:
                 next_invoice_data = await self.async_get_next_invoice(
                     house_id, contract_id
                 )
-                virtual_battery_data = await self.async_get_virtual_battery_details(
-                    house_id, contract_id
-                )
                 virtual_battery_history_data = (
                     await self.async_get_virtual_battery_history(house_id, contract_id)
                 )
@@ -512,7 +476,6 @@ class RepsolLuzYGasAPI:
                     "invoices": invoices_data,
                     "costs": costs_data,
                     "nextInvoice": next_invoice_data,
-                    "virtual_battery_details": virtual_battery_data,
                     "virtual_battery_history": virtual_battery_history_data,
                 }
             LOGGER.debug("Sensor Data %s", all_data)
