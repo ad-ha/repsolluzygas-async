@@ -408,10 +408,14 @@ class RepsolLuzYGasSensor(CoordinatorEntity, SensorEntity):
     @property
     def unit_of_measurement(self):
         """Return the unit of measurement based on the device class."""
+        user_currency = self.hass.config.currency
+
         if self._attr_device_class == SensorDeviceClass.ENERGY:
             return "kWh"
         elif self._attr_device_class == SensorDeviceClass.MONETARY:
-            return "EUR"
+            if self.variable == "pricesEnergyAmount":
+                return f"{user_currency}/kWh"
+            return user_currency
         elif self._attr_device_class == SensorDeviceClass.POWER:
             return "kW"
         elif self._attr_device_class == SensorDeviceClass.DURATION:
@@ -551,10 +555,14 @@ class VirtualBatterySensor(CoordinatorEntity, SensorEntity):
     @property
     def unit_of_measurement(self):
         """Return the unit of measurement based on the device class."""
+        user_currency = self.hass.config.currency
+
         if self._attr_device_class == SensorDeviceClass.ENERGY:
             return "kWh"
         elif self._attr_device_class == SensorDeviceClass.MONETARY:
-            return "EUR"
+            if self.variable == "excedentsPrice":
+                return f"{user_currency}/kWh"
+            return user_currency
         return None
 
 
