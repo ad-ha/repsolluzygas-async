@@ -28,129 +28,127 @@ async def async_setup_entry(hass, entry, async_add_entities):
     # List to hold all sensors
     sensors = []
 
-    # Define sensor names, variables, units, and if it's a master sensor
+    # Define sensor names, variables, and units
     sensor_definitions = [
         {
             "name": "Amount",
             "variable": "amount",
             "device_class": SensorDeviceClass.MONETARY,
-            "is_master": True,
         },
         {
             "name": "Consumption",
             "variable": "consumption",
             "device_class": SensorDeviceClass.ENERGY,
-            "is_master": False,
         },
         {
             "name": "Total Days",
             "variable": "totalDays",
             "device_class": None,
-            "is_master": False,
         },
         {
             "name": "Amount Variable",
             "variable": "amountVariable",
             "device_class": SensorDeviceClass.MONETARY,
-            "is_master": False,
         },
         {
             "name": "Amount Fixed",
             "variable": "amountFixed",
             "device_class": SensorDeviceClass.MONETARY,
-            "is_master": False,
         },
         {
             "name": "Average Daily Amount",
             "variable": "averageAmount",
             "device_class": SensorDeviceClass.MONETARY,
-            "is_master": False,
         },
         {
             "name": "Last Invoice",
             "variable": "lastInvoiceAmount",
             "device_class": SensorDeviceClass.MONETARY,
-            "is_master": False,
         },
         {
             "name": "Last Invoice Paid",
             "variable": "lastInvoicePaid",
             "device_class": None,
-            "is_master": False,
         },
         {
             "name": "Next Invoice Amount",
             "variable": "nextInvoiceAmount",
             "device_class": SensorDeviceClass.MONETARY,
-            "is_master": False,
         },
         {
             "name": "Next Invoice Variable Amount",
             "variable": "nextInvoiceVariableAmount",
             "device_class": SensorDeviceClass.MONETARY,
-            "is_master": False,
         },
         {
             "name": "Next Invoice Fixed Amount",
             "variable": "nextInvoiceFixedAmount",
             "device_class": SensorDeviceClass.MONETARY,
-            "is_master": False,
         },
         {
             "name": "Contract Status",
             "variable": "status",
             "device_class": None,
-            "is_master": False,
         },
         {
             "name": "Power",
             "variable": "power",
             "device_class": SensorDeviceClass.POWER,
-            "is_master": False,
         },
         {
             "name": "Tariff",
             "variable": "fee",
             "device_class": None,
-            "is_master": False,
         },
         {
             "name": "Power Price Punta",
             "variable": "pricesPowerPunta",
             "device_class": SensorDeviceClass.MONETARY,
-            "is_master": False,
         },
         {
             "name": "Power Price Valle",
             "variable": "pricesPowerValle",
             "device_class": SensorDeviceClass.MONETARY,
-            "is_master": False,
         },
         {
             "name": "Energy Price",
             "variable": "pricesEnergyAmount",
             "device_class": SensorDeviceClass.MONETARY,
-            "is_master": False,
+        },
+        # Adding GAS-specific sensors but only populated for GAS contracts
+        {
+            "name": "Gas Fixed Term",
+            "variable": "fixedTerm",
+            "device_class": SensorDeviceClass.MONETARY,
+        },
+        {
+            "name": "Gas Variable Term",
+            "variable": "variableTerm",
+            "device_class": SensorDeviceClass.MONETARY,
         },
     ]
 
     for contract in house_data.get("contracts", []):
         for sensor_def in sensor_definitions:
-            sensors.append(
-                RepsolLuzYGasSensor(
-                    coordinator=coordinator,
-                    name=sensor_def["name"],
-                    variable=sensor_def["variable"],
-                    device_class=sensor_def["device_class"],
-                    is_master=sensor_def["is_master"],
-                    house_id=contract_data["house_id"],
-                    contractType=contract["contractType"],
-                    contract_id=contract["code"],
-                    cups=contract["cups"],
-                    contract_data=contract,
+            if (contract["contractType"] == "GAS" and "Gas" in sensor_def["name"]) or (
+                contract["contractType"] == "ELECTRICITY"
+                and "Gas" not in sensor_def["name"]
+            ):
+                sensors.append(
+                    RepsolLuzYGasSensor(
+                        coordinator=coordinator,
+                        name=sensor_def["name"],
+                        variable=sensor_def["variable"],
+                        device_class=sensor_def["device_class"],
+                        house_id=contract_data["house_id"],
+                        contractType=contract["contractType"],
+                        contract_id=contract["code"],
+                        cups=contract["cups"],
+                        contract_data=contract,
+                    )
                 )
-            )
 
+    # Adding the SVA sensors (if available)
     for contract in house_data.get("contracts", []):
         if "sva" in contract:
             for sva_detail in contract["sva"]:
@@ -163,91 +161,87 @@ async def async_setup_entry(hass, entry, async_add_entities):
                     )
                 )
 
+    # Adding Virtual Battery Sensors for ELECTRICITY contracts
     for contract in contract_data["information"]:
-        virtual_battery_data = await api.async_get_virtual_battery_history(
-            contract_data["house_id"], contract["contract_id"]
-        )
-        if virtual_battery_data:
-            virtual_battery_sensors = [
-                {
-                    "name": "Virtual Battery Amount Pending",
-                    "variable": "pendingAmount",
-                    "device_class": SensorDeviceClass.MONETARY,
-                },
-                {
-                    "name": "Virtual Battery kWh Available",
-                    "variable": "kwhAvailable",
-                    "device_class": SensorDeviceClass.ENERGY,
-                },
-                {
-                    "name": "Virtual Battery Amount Available",
-                    "variable": "amountAvailable",
-                    "device_class": SensorDeviceClass.MONETARY,
-                },
-                {
-                    "name": "Virtual Battery Total Amount Redeemed",
-                    "variable": "appliedAmount",
-                    "device_class": SensorDeviceClass.MONETARY,
-                },
-                {
-                    "name": "Virtual Battery Total kWh Redeemed",
-                    "variable": "kwhRedeemed",
-                    "device_class": SensorDeviceClass.ENERGY,
-                },
-                {
-                    "name": "Virtual Battery Total kWh Charged",
-                    "variable": "totalKWh",
-                    "device_class": SensorDeviceClass.ENERGY,
-                },
-                {
-                    "name": "Virtual Battery Excedents Price",
-                    "variable": "excedentsPrice",
-                    "device_class": SensorDeviceClass.MONETARY,
-                },
-            ]
-
-            for sensor_def in virtual_battery_sensors:
-                sensors.append(
-                    VirtualBatterySensor(
-                        coordinator=coordinator,
-                        name=sensor_def["name"],
-                        variable=sensor_def["variable"],
-                        device_class=sensor_def["device_class"],
-                        house_id=contract_data["house_id"],
-                        contract_id=contract["contract_id"],
-                    )
-                )
-
-            # Extract the latest discharge values for "Last Amount Redeemed" and "Last kWh Redeemed"
-            last_redeemed = max(
-                virtual_battery_data.get("discounts", {}).get("data", []),
-                key=lambda x: x["billingDate"],
-                default=None,
+        if contract["contractType"] == "ELECTRICITY":
+            virtual_battery_data = await api.async_get_virtual_battery_history(
+                contract_data["house_id"], contract["contract_id"]
             )
+            if virtual_battery_data:
+                virtual_battery_sensors = [
+                    {
+                        "name": "Virtual Battery Amount Pending",
+                        "variable": "pendingAmount",
+                        "device_class": SensorDeviceClass.MONETARY,
+                    },
+                    {
+                        "name": "Virtual Battery kWh Available",
+                        "variable": "kwhAvailable",
+                        "device_class": SensorDeviceClass.ENERGY,
+                    },
+                    {
+                        "name": "Virtual Battery Total Amount Redeemed",
+                        "variable": "appliedAmount",
+                        "device_class": SensorDeviceClass.MONETARY,
+                    },
+                    {
+                        "name": "Virtual Battery Total kWh Redeemed",
+                        "variable": "kwhRedeemed",
+                        "device_class": SensorDeviceClass.ENERGY,
+                    },
+                    {
+                        "name": "Virtual Battery Total kWh Charged",
+                        "variable": "totalKWh",
+                        "device_class": SensorDeviceClass.ENERGY,
+                    },
+                    {
+                        "name": "Virtual Battery Excedents Price",
+                        "variable": "excedentsPrice",
+                        "device_class": SensorDeviceClass.MONETARY,
+                    },
+                ]
 
-            if last_redeemed:
-                sensors.append(
-                    VirtualBatterySensor(
-                        coordinator=coordinator,
-                        name="Last Amount Redeemed",
-                        variable="amount",
-                        device_class=SensorDeviceClass.MONETARY,
-                        house_id=contract_data["house_id"],
-                        contract_id=contract["contract_id"],
-                        coupon_data=last_redeemed,
+                for sensor_def in virtual_battery_sensors:
+                    sensors.append(
+                        VirtualBatterySensor(
+                            coordinator=coordinator,
+                            name=sensor_def["name"],
+                            variable=sensor_def["variable"],
+                            device_class=sensor_def["device_class"],
+                            house_id=contract_data["house_id"],
+                            contract_id=contract["contract_id"],
+                        )
                     )
+
+                last_redeemed = max(
+                    virtual_battery_data.get("discounts", {}).get("data", []),
+                    key=lambda x: x["billingDate"],
+                    default=None,
                 )
-                sensors.append(
-                    VirtualBatterySensor(
-                        coordinator=coordinator,
-                        name="Last kWh Redeemed",
-                        variable="kWh",
-                        device_class=SensorDeviceClass.ENERGY,
-                        house_id=contract_data["house_id"],
-                        contract_id=contract["contract_id"],
-                        coupon_data=last_redeemed,
+
+                if last_redeemed:
+                    sensors.append(
+                        VirtualBatterySensor(
+                            coordinator=coordinator,
+                            name="Last Amount Redeemed",
+                            variable="amount",
+                            device_class=SensorDeviceClass.MONETARY,
+                            house_id=contract_data["house_id"],
+                            contract_id=contract["contract_id"],
+                            coupon_data=last_redeemed,
+                        )
                     )
-                )
+                    sensors.append(
+                        VirtualBatterySensor(
+                            coordinator=coordinator,
+                            name="Last kWh Redeemed",
+                            variable="kWh",
+                            device_class=SensorDeviceClass.ENERGY,
+                            house_id=contract_data["house_id"],
+                            contract_id=contract["contract_id"],
+                            coupon_data=last_redeemed,
+                        )
+                    )
 
     async_add_entities(sensors, True)
     LOGGER.info(f"Added {len(sensors)} sensors")
@@ -262,7 +256,6 @@ class RepsolLuzYGasSensor(CoordinatorEntity, SensorEntity):
         name,
         variable,
         device_class,
-        is_master,
         house_id,
         contractType,
         contract_id,
@@ -274,7 +267,6 @@ class RepsolLuzYGasSensor(CoordinatorEntity, SensorEntity):
         self._attr_name = f"Repsol {cups} {name}"
         self.variable = variable
         self._attr_device_class = device_class
-        self.is_master = is_master
         self.house_id = house_id
         self.contractType = contractType
         self.contract_id = contract_id
@@ -289,7 +281,7 @@ class RepsolLuzYGasSensor(CoordinatorEntity, SensorEntity):
     @property
     def state(self):
         """Return the state of the sensor."""
-        # Accessing costs data
+        # General costs
         if self.variable in [
             "amount",
             "consumption",
@@ -304,7 +296,7 @@ class RepsolLuzYGasSensor(CoordinatorEntity, SensorEntity):
                 .get(self.variable)
             )
 
-        # Accessing the latest invoice data
+        # Invoice data
         if self.variable in ["lastInvoiceAmount", "lastInvoicePaid"]:
             invoices = self.coordinator.data.get(self.contract_id, {}).get(
                 "invoices", []
@@ -332,61 +324,57 @@ class RepsolLuzYGasSensor(CoordinatorEntity, SensorEntity):
                 elif self.variable == "nextInvoiceFixedAmount":
                     return nextInvoice.get("amountFixed")
 
-        # Accessing electricity contract data
+        # Electricity-specific
         if self.contractType == "ELECTRICITY":
             if self.variable in ["status", "power", "fee"]:
                 return self.contract_data.get(self.variable, "Unavailable")
-            if self.variable == "pricesPower":
-                return self.parse_power_prices(
-                    self.contract_data.get("prices", {}).get("power", [])
-                )
-            if self.variable == "pricesEnergy":
-                return self.parse_energy_prices(
-                    self.contract_data.get("prices", {}).get("energy", [])
-                )
+
             if self.variable == "pricesPowerPunta":
-                return self.parse_power_prices(
+                return self.parse_prices(
                     self.contract_data.get("prices", {}).get("power", []), 0
                 )
+
             if self.variable == "pricesPowerValle":
-                return self.parse_power_prices(
+                return self.parse_prices(
                     self.contract_data.get("prices", {}).get("power", []), 1
                 )
+
             if self.variable == "pricesEnergyAmount":
-                return self.parse_energy_prices(
+                return self.parse_prices(
                     self.contract_data.get("prices", {}).get("energy", []), 0
+                )
+
+        # Gas-specific
+        if self.contractType == "GAS":
+            if self.variable in ["status", "fixedTerm", "variableTerm"]:
+                return self.extract_gas_price(
+                    self.contract_data.get("prices", {}).get("energy", []),
+                    self.variable,
                 )
 
         return "Unavailable"
 
-    def parse_power_prices(self, prices, index=None):
-        """Parse power prices to extract only the amount."""
+    def extract_gas_price(self, prices, term_type):
+        """Extract fixed or variable term prices for Gas contracts."""
+        if term_type == "fixedTerm":
+            return next(
+                (price for price in prices if "Término Fijo" in price), "Unavailable"
+            )
+        elif term_type == "variableTerm":
+            return next(
+                (price for price in prices if "Término Variable" in price),
+                "Unavailable",
+            )
+        return "Unavailable"
+
+    def parse_prices(self, prices, index):
+        """Parse the prices to extract only the amount."""
         parsed_prices = []
         for price in prices:
             match = re.search(r"(\d+,\d+)", price)
             if match:
                 parsed_prices.append(match.group(1).replace(",", "."))
-        if index is not None:
-            return parsed_prices[index] if index < len(parsed_prices) else "Unavailable"
-        return parsed_prices
-
-    def parse_energy_prices(self, prices, index=None):
-        """Parse energy prices to extract only the amount."""
-        parsed_prices = []
-        for price in prices:
-            match = re.search(r"(\d+,\d+)", price)
-            if match:
-                parsed_prices.append(match.group(1).replace(",", "."))
-        if index is not None:
-            return parsed_prices[index] if index < len(parsed_prices) else "Unavailable"
-        return parsed_prices
-
-    def format_price(self, price):
-        """Format price to 6 decimal places."""
-        try:
-            return f"{float(price):.6f}"
-        except (ValueError, TypeError):
-            return "Unavailable"
+        return parsed_prices[index] if index < len(parsed_prices) else "Unavailable"
 
     @property
     def unique_id(self):
@@ -409,7 +397,6 @@ class RepsolLuzYGasSensor(CoordinatorEntity, SensorEntity):
     def unit_of_measurement(self):
         """Return the unit of measurement based on the device class."""
         user_currency = self.hass.config.currency
-
         if self._attr_device_class == SensorDeviceClass.ENERGY:
             return "kWh"
         elif self._attr_device_class == SensorDeviceClass.MONETARY:
@@ -421,10 +408,6 @@ class RepsolLuzYGasSensor(CoordinatorEntity, SensorEntity):
         elif self._attr_device_class == SensorDeviceClass.DURATION:
             return "d"
         return None
-
-    def update(self):
-        """Update the sensor (handled by the Coordinator)."""
-        pass
 
 
 class VirtualBatterySensor(CoordinatorEntity, SensorEntity):
@@ -494,19 +477,6 @@ class VirtualBatterySensor(CoordinatorEntity, SensorEntity):
                 else "Unavailable"
             )
 
-        if self.variable == "amountAvailable":
-            total_amount = excedents.get("totalAmount", 0)
-            applied_amount = excedents.get("appliedAmount", 0)
-            pending_amount = next(
-                (
-                    c["pendingAmount"]
-                    for c in discounts.get("contracts", [])
-                    if c["productCode"] == self.contract_id
-                ),
-                0,
-            )
-            return total_amount - applied_amount - pending_amount
-
         if self.variable == "appliedAmount":
             return excedents.get("appliedAmount", "Unavailable")
 
@@ -556,7 +526,6 @@ class VirtualBatterySensor(CoordinatorEntity, SensorEntity):
     def unit_of_measurement(self):
         """Return the unit of measurement based on the device class."""
         user_currency = self.hass.config.currency
-
         if self._attr_device_class == SensorDeviceClass.ENERGY:
             return "kWh"
         elif self._attr_device_class == SensorDeviceClass.MONETARY:
