@@ -1,7 +1,8 @@
 """Integration for Repsol Luz y Gas."""
 import aiohttp
 import asyncio
-
+import voluptuous as vol
+from homeassistant.helpers import config_validation as cv
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
@@ -25,10 +26,14 @@ from .const import (
     LOGIN_DATA,
 )
 
+# Define the configuration schema for config-entry only
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
 PLATFORMS: list[str] = ["sensor"]
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Set up the Repsol Luz y Gas integration."""
     return True
 
 
