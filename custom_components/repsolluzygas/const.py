@@ -4,11 +4,11 @@ from datetime import timedelta
 LOGGER = logging.getLogger(__name__)
 
 DOMAIN = "repsolluzygas"
-LOGIN_URL = "https://gigya.repsolluzygas.com/accounts.login"
-BASE_API_URL = "https://pro-wally-back.cloudapp.repsol.com/v2/"
+LOGIN_URL = "https://login.repsol.es/accounts.login"
+BASE_API_URL = "https://areacliente.repsol.es/api/proxy/"
 CONTRACTS_URL = f"{BASE_API_URL}houses"
 HOUSES_URL = f"{BASE_API_URL}houses/{{}}"
-INVOICES_URL = f"{BASE_API_URL}houses/{{}}/products/{{}}/invoices?limit=1"
+INVOICES_URL = f"{BASE_API_URL}houses/{{}}/products/{{}}/invoices?limit=10"
 COSTS_URL = f"{BASE_API_URL}houses/{{}}/products/{{}}/consumption/accumulated"
 NEXT_INVOICE_URL = (
     f"{BASE_API_URL}houses/{{}}/products/{{}}/consumption/invoice-estimate"
@@ -57,17 +57,19 @@ CONTRACTS_HEADERS = {
 
 # Cookies data for API access
 COOKIES_CONST = {
-    "gmid": "gmid.ver4.AcbHSBMhFw.1PO5AEWAU-E5wcBXeuZT_c_uz5VVE_t3ZPwM8tKdJgOFsVf0lDmNsBlpecXxwdf0.Zo36FXG0Nnu7Dxd6z0ZedVvVW6U-G9DQlNq1ofie-ez5wHw5SuID3P6jzqbLsuL7BIPqFup0n6D4LSsjS7YKPg.sc3",
-    "ucid": "TiA7xpk2tJCJIn50B0CuzQ",
+    "gmid": "gmid.ver4.AtLtj-S6Bg.5nGvNQiXUMMFW5Z7o3A2mIP4kjnCrm-CtwscvU8NC2FhNb6dxX09HfdUzL3pI26o.SHj7Fh8B8OK5xpZyFyZUX6mtQeRTaEhz_FtBwVbr_-5l6b8u6iBOOR6aoh7B-2kdAVrB3ro8ysuq1sEGjriOfQ.sc3",
+    "ucid": "fXMDPs47yZukqcRaCm6LKQ",
     "hasGmid": "ver4",
-    "gig_bootstrap_3_2MAJfXPA8zGLzfv2TRlhKGs3d6WdNsLU8unCCIGFhXMo9Ry49fG9k-aWG4SQY9_B": "gigya_ver4",
+    "gig_bootstrap_3_jm2BKK8jIBHi9nXHP8OsQ-HNgJKWxgd1o6kbNqsWvhUy0hhD1eeCpHC-qCrrWe8D": "login_ver4",
 }
 
 # Login data for async_login
 LOGIN_DATA = {
     "targetEnv": "jssdk",
     "includeUserInfo": "true",
+    "include": "profile,data,preferences,",
     "lang": "en",
-    "APIKey": "3_2MAJfXPA8zGLzfv2TRlhKGs3d6WdNsLU8unCCIGFhXMo9Ry49fG9k-aWG4SQY9_B",
+    "sdk": "js_latest",
+    "APIKey": "3_jm2BKK8jIBHi9nXHP8OsQ-HNgJKWxgd1o6kbNqsWvhUy0hhD1eeCpHC-qCrrWe8D",
     "format": "json",
 }
