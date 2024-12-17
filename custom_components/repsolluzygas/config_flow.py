@@ -1,12 +1,13 @@
 from homeassistant import config_entries, core, exceptions
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import voluptuous as vol
 
 from .const import (
     DOMAIN,
     LOGGER,
-)  # Make sure you have a DOMAIN constant in your const.py
-from . import RepsolLuzYGasAPI  # Import your API class
+)
+from . import RepsolLuzYGasAPI
 
 
 class RepsolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -18,7 +19,7 @@ class RepsolConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             # Initialize the API client and attempt to login
             api = RepsolLuzYGasAPI(
-                self.hass.helpers.aiohttp_client.async_get_clientsession(),
+                async_get_clientsession(self.hass),
                 user_input["username"],
                 user_input["password"],
             )
