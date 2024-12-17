@@ -3,12 +3,14 @@
 import aiohttp
 import asyncio
 import voluptuous as vol
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers import config_validation as cv
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from aiohttp.client_exceptions import ClientError
+
 
 from .const import (
     DOMAIN,
@@ -40,7 +42,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up the Repsol Luz y Gas integration from a config entry."""
-    session = hass.helpers.aiohttp_client.async_get_clientsession(hass)
+    session = async_get_clientsession(hass)
     client = RepsolLuzYGasAPI(session, entry.data["username"], entry.data["password"])
 
     async def async_update_data_start():
